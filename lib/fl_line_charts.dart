@@ -147,11 +147,7 @@ class _CustomizedLineChart extends StatelessWidget {
 
   FlTitlesData get titlesData => FlTitlesData(
       bottomTitles: AxisTitles(
-        sideTitles: SideTitles(
-          showTitles: true,
-          reservedSize: 40,
-          getTitlesWidget: bottomTitleWidgets,
-        ),
+        sideTitles: bottomTitles(),
       ),
       rightTitles: AxisTitles(
         sideTitles: rightTitles(),
@@ -428,7 +424,7 @@ class _CustomizedLineChart extends StatelessWidget {
         getTitlesWidget: bottomTitleWidgets,
         showTitles: true,
         interval:
-            2, // can set to be 5 for larger scale, be aware that any value that's not divisible by interval will not show up correctly
+            1, // can set to be 5 for larger scale, be aware that any value that's not divisible by interval will not show up correctly
         reservedSize: 32,
       );
 
