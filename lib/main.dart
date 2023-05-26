@@ -1,121 +1,147 @@
-import 'package:fl_charts_xlabels/fl_line_charts.dart';
+import 'dart:math';
+
 import 'package:flutter/material.dart';
+import 'package:fl_chart/fl_chart.dart';
 
 void main() {
-  runApp(const MyApp());
-}
+  List<DateTime> timestamps = [
+    DateTime(2023, 5, 1, 0, 0, 0),
+    DateTime(2023, 5, 2, 0, 0, 0),
+    DateTime(2023, 5, 5, 0, 0, 0),
+    DateTime(2023, 5, 17, 0, 0, 0),
+    DateTime(2023, 5, 20, 0, 0, 0),
+    DateTime(2023, 5, 25, 0, 0, 0),
+  ];
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  DateTime currentDay = timestamps.first;
 
-  // This widget is the root of your application.
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Flutter Demo',
-      theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // TRY THIS: Try running your application with "flutter run". You'll see
-        // the application has a blue toolbar. Then, without quitting the app,
-        // try changing the seedColor in the colorScheme below to Colors.green
-        // and then invoke "hot reload" (save your changes or press the "hot
-        // reload" button in a Flutter-supported IDE, or press "r" if you used
-        // the command line to start the app).
-        //
-        // Notice that the counter didn't reset back to zero; the application
-        // state is not lost during the reload. To reset the state, use hot
-        // restart instead.
-        //
-        // This works for code too, not just values: Most code changes can be
-        // tested with just a hot reload.
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-        useMaterial3: true,
-      ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
-    );
-  }
-}
+  List<DateTime> timeWholeStamps = [];
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
-
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
-
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
-
-  final String title;
-
-  @override
-  State<MyHomePage> createState() => _MyHomePageState();
-}
-
-class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
-
-  void _incrementCounter() {
-    setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
-    });
+  while (currentDay.isBefore(timestamps.last)) {
+    timeWholeStamps.add(currentDay);
+    currentDay = currentDay.add(Duration(days: 1));
   }
 
-  @override
-  Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
-    return Scaffold(
-      appBar: AppBar(
-        // TRY THIS: Try changing the color here to a specific color (to
-        // Colors.amber, perhaps?) and trigger a hot reload to see the AppBar
-        // change color while the other colors stay the same.
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        title: Text(widget.title),
-      ),
-      body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            Container(
-              height: 500,
-              width: 500,
-              child: CustomizedLineChart(
-                enabledUpdate: false,
-                updateWidget: null,
-                measureSwitcherWidget: null,
-                yAxisShowDouble: false,
-                showMeasurement: '',
-                dataList: [21, 23, 27],
-                xAxisHasTooltip: true,
-                xAxisTooltipList: ['1', '2', '3'],
-                xLabelList: List.generate([21, 23, 27].length,
-                    (index) => 'No.' + (index + 1).toString()),
-                title: 'Historic Body Mass Index',
-                highNormalLowList: [50, 40, 35, 30, 25, 18.5],
-                yAxisRange: [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50],
-                yLabelsList: ['1', '2', '3', '4', '5', '6'],
-              ),
-            )
-          ],
+  timeWholeStamps.add(timestamps.last);
+
+  // Calculate time differences between timestamps
+  List<double> timeDifferences = [];
+  for (int i = 0; i < timestamps.length - 1; i++) {
+    Duration difference = timestamps[i + 1].difference(timestamps[i]);
+    timeDifferences.add(difference.inDays.toDouble());
+  }
+
+  List<FlSpot> generateData(
+      List<double> timeDifferences, List<double> yValues) {
+    List<FlSpot> data = [];
+    double cumulativeX = 0.0;
+
+    for (int i = 0; i < timeDifferences.length; i++) {
+      double x = cumulativeX;
+      double y = yValues[i];
+
+      FlSpot spot = FlSpot(x, y);
+
+      cumulativeX += timeDifferences[i];
+
+      data.add(spot);
+    }
+    data.add(FlSpot(cumulativeX, yValues.last));
+    return data;
+  }
+
+  int calculateDayDifference(DateTime var1, DateTime var2) {
+    Duration difference = var2.difference(var1);
+    return difference.inDays.abs();
+  }
+
+  List<double> yValues = [4, 3.5, 6, 8, 10, 7];
+
+  List<FlSpot> data = generateData(timeDifferences, yValues);
+
+  // Define a custom method to calculate the interval based on time differences
+  double? calculateInterval(List<double> timeDifferences, int index) {
+    if (index >= 0 && index < timeDifferences.length) {
+      // Get the interval for the specified index
+      double interval = timeDifferences[index];
+      return interval;
+    }
+    return null; // Return null if the index is out of range
+  }
+
+  Widget getTitleWidget(double value, TitleMeta meta) {
+    if (value >= 0 && value < timeWholeStamps.length) {
+      DateTime timestamp = timeWholeStamps[value.toInt()];
+
+      return Text(
+        '${timestamp.month}/${timestamp.day}',
+        style: const TextStyle(
+          color: Colors.black,
+          fontWeight: FontWeight.normal,
+          fontSize: 12,
+        ),
+        textAlign: TextAlign.right,
+      );
+    }
+    return Container();
+  }
+
+  // Create a LineChartData object
+  LineChartData chartData = LineChartData(
+    minX: 0,
+    maxX: calculateDayDifference(timestamps.last, timestamps.first).toDouble(),
+    minY: 0,
+    maxY: yValues.reduce(max) + 1,
+    titlesData: FlTitlesData(
+      bottomTitles: AxisTitles(
+        sideTitles: SideTitles(
+          showTitles: true,
+          reservedSize: 40,
+          interval: 3,
+          getTitlesWidget: getTitleWidget,
         ),
       ),
-    );
-  }
+    ),
+    gridData: FlGridData(
+      show: true,
+      drawVerticalLine: true,
+      getDrawingHorizontalLine: (value) {
+        return FlLine(
+          color: Colors.grey,
+          strokeWidth: 0.5,
+        );
+      },
+      getDrawingVerticalLine: (value) {
+        return FlLine(
+          color: Colors.grey,
+          strokeWidth: 0.5,
+        );
+      },
+    ),
+    borderData: FlBorderData(
+      show: true,
+      border: Border.all(
+        color: Colors.black,
+        width: 0.5,
+      ),
+    ),
+    lineBarsData: [
+      LineChartBarData(
+        spots: data,
+        isCurved: true,
+        color: Colors.blue,
+        barWidth: 1, // Increase the barWidth to create gaps
+        dotData: FlDotData(show: true),
+      ),
+    ],
+  );
+
+  // Build your chart widget using the LineChart widget
+  LineChart chart = LineChart(
+    chartData,
+    swapAnimationDuration: const Duration(milliseconds: 250),
+  );
+
+  // Add the chart widget to your app's UI
+  runApp(MaterialApp(home: Scaffold(body: chart)));
 }
